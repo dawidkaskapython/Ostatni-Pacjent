@@ -6,6 +6,9 @@ public class UIController : MonoBehaviour
 {
     public static UIController instance;
 
+    [Header("Player Control")]
+    public MonoBehaviour playerMovementScript; // <-- tu przeci¹gasz PlayerMovement !!!
+
     private void Awake()
     {
         instance = this;
@@ -20,7 +23,6 @@ public class UIController : MonoBehaviour
     {
         messageText.text = "";
 
-        // 1. Na start blokujemy myszkê na œrodku i j¹ ukrywamy (¿eby graæ)
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -36,7 +38,7 @@ public class UIController : MonoBehaviour
     public void GoToMainMenu()
     {
         Time.timeScale = 1f;
-        // Odblokuj myszkê przed wyjœciem do menu
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -52,23 +54,25 @@ public class UIController : MonoBehaviour
     {
         if (pauseScreen.activeSelf == false)
         {
-            // --- PAUZA (W³¹czamy menu) ---
+            // PAUSE
             pauseScreen.SetActive(true);
             Time.timeScale = 0f;
 
-            // 2. Odblokuj myszkê, ¿eby gracz móg³ klikaæ w przyciski
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            EnablePlayer(false);
         }
         else
         {
-            // --- POWRÓT DO GRY (Wy³¹czamy menu) ---
+            // UNPAUSE
             pauseScreen.SetActive(false);
             Time.timeScale = 1f;
 
-            // 3. Zablokuj myszkê z powrotem na œrodku ekranu
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+
+            EnablePlayer(true);
         }
     }
 
@@ -76,9 +80,10 @@ public class UIController : MonoBehaviour
     {
         levelEndScreen.SetActive(true);
 
-        // 4. Na ekranie koñcowym te¿ chcemy myszkê
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        EnablePlayer(false);
     }
 
     public void ShowMessage(string message)
@@ -89,5 +94,12 @@ public class UIController : MonoBehaviour
     public void HideMessage()
     {
         messageText.text = "";
+    }
+
+    // --- NOWE: W£¥CZ/WY£¥CZ PLAYER MOVEMENT ---
+    private void EnablePlayer(bool enable)
+    {
+        if (playerMovementScript != null)
+            playerMovementScript.enabled = enable;
     }
 }

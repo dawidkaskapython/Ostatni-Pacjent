@@ -7,6 +7,12 @@ public class FlashlightEffect : MonoBehaviour
     private Light yellowLight;
     public float flashRange = 100f;
 
+    // --- CAMERA SHAKE ---
+    public Transform cameraTransform;
+    public float shakeAmount = 0.05f;
+    public float shakeSpeed = 20f;
+    private Vector3 originalCameraPos;
+    // ---------------------
 
     // BASE VALUES
     private float baseSpotAngle = 56f;
@@ -20,9 +26,9 @@ public class FlashlightEffect : MonoBehaviour
     public float flashSpot = 150f;
     public float flashIntensity = 10f;
 
-    public float chargeTime = 1f;        // ile musisz trzymać F
-    public float flashHoldTime = 0.1f;   // czas flasha
-    public float cooldownTime = 2f;      // cooldown
+    public float chargeTime = 1f;
+    public float flashHoldTime = 0.1f;
+    public float cooldownTime = 2f;
 
     private bool isOnCooldown = false;
 
@@ -31,11 +37,14 @@ public class FlashlightEffect : MonoBehaviour
         yellowLight = flashlightColor.Find("YellowLight").GetComponent<Light>();
         yellowLight.spotAngle = baseSpotAngle;
         yellowLight.intensity = baseIntensity;
+
+        // zapamiętaj oryginalną pozycję kamery
+        if (cameraTransform != null)
+            originalCameraPos = cameraTransform.localPosition;
     }
 
     void Update()
     {
-        // jeśli wciskasz F i nie ma cooldownu
         if (Input.GetKeyDown(KeyCode.F) && !isOnCooldown)
         {
             StartCoroutine(ChargeRoutine());
@@ -46,42 +55,52 @@ public class FlashlightEffect : MonoBehaviour
     {
         float t = 0f;
 
-        // Dopóki trzymasz F – ładowanie
         while (Input.GetKey(KeyCode.F))
         {
             t += Time.deltaTime;
 
-            // płynne przechodzenie do celów
             yellowLight.spotAngle = Mathf.Lerp(baseSpotAngle, chargeTargetSpot, t / chargeTime);
             yellowLight.intensity = Mathf.Lerp(baseIntensity, chargeTargetIntensity, t / chargeTime);
 
-            // jeśli minęła wymagana sekunda → FLASH
+            // --- CAMERA SHAKE ---
+            if (cameraTransform != null)
+            {
+                cameraTransform.localPosition =
+                    originalCameraPos +
+                    (Random.insideUnitSphere * shakeAmount) *
+                    Mathf.Sin(Time.time * shakeSpeed);
+            }
+            // ---------------------
+
             if (t >= chargeTime)
             {
                 StartCoroutine(FlashSequence());
+                ResetCamera();
                 yield break;
             }
 
             yield return null;
         }
 
-        // Jeśli puściłeś wcześniej → powrót do bazowych wartości
+        ResetCamera();
         StartCoroutine(ReturnToBase());
+    }
+
+    void ResetCamera()
+    {
+        if (cameraTransform != null)
+            cameraTransform.localPosition = originalCameraPos;
     }
 
     IEnumerator FlashSequence()
     {
         isOnCooldown = true;
 
-        // FLASH
         yellowLight.spotAngle = flashSpot;
         yellowLight.intensity = flashIntensity;
 
-        // ───────────────────────────────────────────────
-        // 1. Wypuszczenie promienia po flashu
         RaycastHit hit;
 
-        // Używamy pozycji i kierunku obiektu z tym skryptem (najczęściej kamera)
         if (Physics.Raycast(transform.position, transform.forward, out hit, flashRange))
         {
             if (hit.collider.CompareTag("Enemy"))
@@ -89,23 +108,18 @@ public class FlashlightEffect : MonoBehaviour
                 Destroy(hit.collider.gameObject);
             }
         }
-        // ───────────────────────────────────────────────
 
         yield return new WaitForSeconds(flashHoldTime);
 
-        // 2. Powrót
         yellowLight.spotAngle = baseSpotAngle;
         yellowLight.intensity = baseIntensity;
 
-        // 3. Cooldown
         yield return new WaitForSeconds(cooldownTime);
         isOnCooldown = false;
     }
 
-
     IEnumerator ReturnToBase()
     {
-        // powrót do bazowych gdy przerwiesz ładowanie
         float t = 0f;
         float duration = 0.2f;
 

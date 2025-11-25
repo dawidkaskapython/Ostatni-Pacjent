@@ -505,7 +505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3201282104d0eb45bb8f1db598b027d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firstLevelName: Demo Mini FPC
+  sceneToLoad: DEMO
 --- !u!1 &894921683
 GameObject:
   m_ObjectHideFlags: 0

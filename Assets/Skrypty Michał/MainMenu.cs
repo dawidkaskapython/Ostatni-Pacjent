@@ -1,15 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 public class MainMenu : MonoBehaviour
 {
-    public string firstLevelName;
-
+    public string sceneToLoad;   // <- nazwa sceny do odpalenia
 
     public void StartGame()
     {
-        SceneManager.LoadScene("Demo Mini FPC");
+        SceneManager.LoadScene(sceneToLoad);
     }
 
     public void QuitGame()
