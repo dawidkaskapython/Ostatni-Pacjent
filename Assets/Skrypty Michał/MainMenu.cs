@@ -9,7 +9,7 @@ public class MainMenu : MonoBehaviour
 
     public void StartGame()
     {
-        SceneManager.LoadScene("Demo Mini FPC");
+        SceneManager.LoadScene("LATARKA_DEMO");
     }
 
     public void QuitGame()
