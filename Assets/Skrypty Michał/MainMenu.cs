@@ -7,7 +7,11 @@ public class MainMenu : MonoBehaviour
 
     public void StartGame()
     {
+<<<<<<< HEAD
         SceneManager.LoadScene(sceneToLoad);
+=======
+        SceneManager.LoadScene("LATARKA_DEMO");
+>>>>>>> 0f2b88e1d246902b3854ba15a31a290d4a84ca3e
     }
 
     public void QuitGame()
