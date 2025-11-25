@@ -15,8 +15,8 @@ public class FlashlightEffect : MonoBehaviour
     // ---------------------
 
     // BASE VALUES
-    private float baseSpotAngle = 56f;
-    private float baseIntensity = 2f;
+    public float baseSpotAngle = 56f;
+    public float baseIntensity = 2f;
 
     // CHARGE TARGET VALUES
     public float chargeTargetSpot = 30f;
