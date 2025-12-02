@@ -23,6 +23,7 @@ public class UIController : MonoBehaviour
     {
         messageText.text = "";
 
+        // 1. Na start blokujemy myszkê na œrodku i j¹ ukrywamy (¿eby graæ)
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -58,6 +59,7 @@ public class UIController : MonoBehaviour
             pauseScreen.SetActive(true);
             Time.timeScale = 0f;
 
+            // 2. Odblokuj myszkê, ¿eby gracz móg³ klikaæ w przyciski
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
@@ -69,6 +71,7 @@ public class UIController : MonoBehaviour
             pauseScreen.SetActive(false);
             Time.timeScale = 1f;
 
+            // 3. Zablokuj myszkê z powrotem na œrodku ekranu
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
@@ -80,6 +83,7 @@ public class UIController : MonoBehaviour
     {
         levelEndScreen.SetActive(true);
 
+        // 4. Na ekranie koñcowym te¿ chcemy myszkê
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 

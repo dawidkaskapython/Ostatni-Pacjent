@@ -45,6 +45,7 @@ public class FlashlightEffect : MonoBehaviour
 
     void Update()
     {
+        // jeśli wciskasz F i nie ma cooldownu
         if (Input.GetKeyDown(KeyCode.F) && !isOnCooldown)
         {
             StartCoroutine(ChargeRoutine());
@@ -55,10 +56,12 @@ public class FlashlightEffect : MonoBehaviour
     {
         float t = 0f;
 
+        // Dopóki trzymasz F – ładowanie
         while (Input.GetKey(KeyCode.F))
         {
             t += Time.deltaTime;
 
+            // płynne przechodzenie do celów
             yellowLight.spotAngle = Mathf.Lerp(baseSpotAngle, chargeTargetSpot, t / chargeTime);
             yellowLight.intensity = Mathf.Lerp(baseIntensity, chargeTargetIntensity, t / chargeTime);
 
@@ -96,11 +99,15 @@ public class FlashlightEffect : MonoBehaviour
     {
         isOnCooldown = true;
 
+        // FLASH
         yellowLight.spotAngle = flashSpot;
         yellowLight.intensity = flashIntensity;
 
+        // ───────────────────────────────────────────────
+        // 1. Wypuszczenie promienia po flashu
         RaycastHit hit;
 
+        // Używamy pozycji i kierunku obiektu z tym skryptem (najczęściej kamera)
         if (Physics.Raycast(transform.position, transform.forward, out hit, flashRange))
         {
             if (hit.collider.CompareTag("Enemy"))
@@ -108,18 +115,23 @@ public class FlashlightEffect : MonoBehaviour
                 Destroy(hit.collider.gameObject);
             }
         }
+        // ───────────────────────────────────────────────
 
         yield return new WaitForSeconds(flashHoldTime);
 
+        // 2. Powrót
         yellowLight.spotAngle = baseSpotAngle;
         yellowLight.intensity = baseIntensity;
 
+        // 3. Cooldown
         yield return new WaitForSeconds(cooldownTime);
         isOnCooldown = false;
     }
 
+
     IEnumerator ReturnToBase()
     {
+        // powrót do bazowych gdy przerwiesz ładowanie
         float t = 0f;
         float duration = 0.2f;
 
