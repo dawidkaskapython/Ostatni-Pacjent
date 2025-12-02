@@ -3,6 +3,10 @@ using System.Collections;
 
 public class FlickerJumpscare : MonoBehaviour
 {
+    [Header("Player Control")]
+    public MonoBehaviour playerMovementScript; // Przeciągnij tu skrypt ruchu gracza
+    public MonoBehaviour cameraLookScript;     // (Opcjonalne) Przeciągnij tu skrypt kamery/myszki
+
     [Header("Monster Spawn")]
     public GameObject monsterPrefab;
     public Transform spawnPoint;
@@ -13,7 +17,7 @@ public class FlickerJumpscare : MonoBehaviour
     public Vector2 flickerIntervalRange = new Vector2(0.05f, 0.3f);
 
     [Header("Audio")]
-    public AudioClip jumpscareSound;   // dźwięk jumpscare’a
+    public AudioClip jumpscareSound;
     public float soundVolume = 1f;
 
     private bool triggered = false;
@@ -22,7 +26,7 @@ public class FlickerJumpscare : MonoBehaviour
 
     private void Start()
     {
-        // Tworzymy AudioSource w runtime – najprościej i najpewniej
+        // Tworzymy AudioSource w runtime
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f; // 3D sound
@@ -34,6 +38,10 @@ public class FlickerJumpscare : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         triggered = true;
+
+        // 1. ZABLOKUJ RUCH (i kamerę) NA STARCIE
+        TogglePlayerMovement(false);
+
         StartCoroutine(JumpscareSequence());
     }
 
@@ -42,10 +50,10 @@ public class FlickerJumpscare : MonoBehaviour
         // Spawn potwora
         monsterInstance = Instantiate(monsterPrefab, spawnPoint.position, spawnPoint.rotation);
 
-        // Odpal dźwięk w tym samym momencie
+        // Odpal dźwięk
         if (jumpscareSound != null)
         {
-            audioSource.transform.position = spawnPoint.position; // dźwięk dochodzi z miejsca spawnu
+            audioSource.transform.position = spawnPoint.position;
             audioSource.PlayOneShot(jumpscareSound, soundVolume);
         }
 
@@ -53,6 +61,7 @@ public class FlickerJumpscare : MonoBehaviour
 
         float timer = 0f;
 
+        // Pętla migania
         while (timer < flickerDuration)
         {
             pointLight.enabled = !pointLight.enabled;
@@ -67,10 +76,33 @@ public class FlickerJumpscare : MonoBehaviour
             timer += interval;
         }
 
-        // Końcowe ustawienia: światło ON, potwór znika
+        // KONIEC SCENKI
+
+        // Ustawienia światła i sprzątanie potwora
         pointLight.enabled = true;
 
         if (monsterInstance != null)
             Destroy(monsterInstance);
+
+        // 2. ODBLOKUJ RUCH PO ZAKOŃCZENIU
+        TogglePlayerMovement(true);
+    }
+
+    // Pomocnicza funkcja do włączania/wyłączania sterowania
+    private void TogglePlayerMovement(bool enable)
+    {
+        if (playerMovementScript != null)
+            playerMovementScript.enabled = enable;
+
+        if (cameraLookScript != null)
+            cameraLookScript.enabled = enable;
+
+        // Opcjonalnie: Jeśli gracz ma Rigidbody i chcesz go zatrzymać w miejscu natychmiast:
+        Rigidbody rb = playerMovementScript.GetComponent<Rigidbody>();
+        if (rb != null && !enable)
+        {
+            rb.linearVelocity = Vector3.zero; // W starszych Unity użyj: rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 }

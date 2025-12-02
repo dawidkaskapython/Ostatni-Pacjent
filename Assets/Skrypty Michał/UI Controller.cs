@@ -6,104 +6,142 @@ public class UIController : MonoBehaviour
 {
     public static UIController instance;
 
-    [Header("Player Control")]
-    public MonoBehaviour playerMovementScript; // <-- tu przeci¹gasz PlayerMovement !!!
+    [Header("Player Control - Przypisz skrypty tutaj")]
+    // Skrypt odpowiadaj¹cy za chodzenie (np. PlayerMovement)
+    public MonoBehaviour playerMovementScript;
+    // Skrypt odpowiadaj¹cy za rozgl¹danie siê (jeœli jest osobny, np. MouseLook)
+    public MonoBehaviour cameraLookScript;
+    // Opcjonalnie: Rigidbody gracza, ¿eby zatrzymaæ poœlizg
+    public Rigidbody playerRigidbody;
+
+    [Header("UI Elements")]
+    public GameObject levelEndScreen;
+    public string mainMenuName;
+    public GameObject pauseScreen;
+    public TMP_Text messageText;
+
+    // Flaga sprawdzaj¹ca czy gra jest zapauzowana
+    private bool isPaused = false;
 
     private void Awake()
     {
         instance = this;
     }
 
-    public GameObject levelEndScreen;
-    public string mainMenuName;
-    public GameObject pauseScreen;
-    public TMP_Text messageText;
-
     void Start()
     {
-        messageText.text = "";
+        // 1. Na start blokujemy myszkê i ukrywamy j¹
+        LockCursor();
 
-        // 1. Na start blokujemy myszkê na œrodku i j¹ ukrywamy (¿eby graæ)
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // Upewniamy siê, ¿e menu pauzy jest wy³¹czone na starcie
+        if (pauseScreen) pauseScreen.SetActive(false);
     }
 
     void Update()
     {
+        // Obs³uga klawisza ESCAPE
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             PauseUnpause();
         }
     }
 
+    public void PauseUnpause()
+    {
+        // Jeœli menu koñca poziomu jest aktywne, nie pozwól na pauzowanie
+        if (levelEndScreen.activeSelf) return;
+
+        if (!isPaused)
+        {
+            // === W£¥CZ PAUZÊ ===
+            isPaused = true;
+            pauseScreen.SetActive(true);
+
+            // Zatrzymaj czas w grze
+            Time.timeScale = 0f;
+
+            // Odblokuj kursor myszy (¿eby klikaæ w menu)
+            UnlockCursor();
+
+            // WY£¥CZ sterowanie gracza
+            EnablePlayerControl(false);
+        }
+        else
+        {
+            // === WY£¥CZ PAUZÊ (WRÓÆ DO GRY) ===
+            isPaused = false;
+            pauseScreen.SetActive(false);
+
+            // Wznów czas
+            Time.timeScale = 1f;
+
+            // Zablokuj kursor myszy (¿eby celowaæ)
+            LockCursor();
+
+            // W£¥CZ sterowanie gracza
+            EnablePlayerControl(true);
+        }
+    }
+
     public void GoToMainMenu()
     {
-        Time.timeScale = 1f;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
+        Time.timeScale = 1f; // Wa¿ne: przywróæ czas przed zmian¹ sceny
+        UnlockCursor();
         SceneManager.LoadScene(mainMenuName);
     }
 
     public void QuitGame()
     {
+        Debug.Log("Wychodzenie z gry...");
         Application.Quit();
-    }
-
-    public void PauseUnpause()
-    {
-        if (pauseScreen.activeSelf == false)
-        {
-            // PAUSE
-            pauseScreen.SetActive(true);
-            Time.timeScale = 0f;
-
-            // 2. Odblokuj myszkê, ¿eby gracz móg³ klikaæ w przyciski
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-
-            EnablePlayer(false);
-        }
-        else
-        {
-            // UNPAUSE
-            pauseScreen.SetActive(false);
-            Time.timeScale = 1f;
-
-            // 3. Zablokuj myszkê z powrotem na œrodku ekranu
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
-            EnablePlayer(true);
-        }
     }
 
     public void ShowLevelEndScreen(bool levelCompleted)
     {
         levelEndScreen.SetActive(true);
-
-        // 4. Na ekranie koñcowym te¿ chcemy myszkê
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        EnablePlayer(false);
+        UnlockCursor();
+        EnablePlayerControl(false);
     }
 
     public void ShowMessage(string message)
     {
-        messageText.text = message;
+        if (messageText) messageText.text = message;
     }
 
     public void HideMessage()
     {
-        messageText.text = "";
+        if (messageText) messageText.text = "";
     }
 
-    // --- NOWE: W£¥CZ/WY£¥CZ PLAYER MOVEMENT ---
-    private void EnablePlayer(bool enable)
+    // --- METODY POMOCNICZE ---
+
+    private void EnablePlayerControl(bool enable)
     {
+        // 1. Wy³¹cz/W³¹cz chodzenie
         if (playerMovementScript != null)
             playerMovementScript.enabled = enable;
+
+        // 2. Wy³¹cz/W³¹cz rozgl¹danie siê (jeœli masz osobny skrypt kamery)
+        if (cameraLookScript != null)
+            cameraLookScript.enabled = enable;
+
+        // 3. (Opcjonalnie) Wyzeruj prêdkoœæ, ¿eby gracz nie "œlizga³ siê" po pauzie
+        if (!enable && playerRigidbody != null)
+        {
+            playerRigidbody.linearVelocity = Vector3.zero; // W Unity 6 u¿yj linearVelocity, w starszych velocity
+            playerRigidbody.angularVelocity = Vector3.zero;
+        }
+    }
+
+    private void LockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }
