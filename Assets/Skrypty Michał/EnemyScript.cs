@@ -12,39 +12,57 @@ public class EnemyScript : MonoBehaviour
 
     void Start()
     {
-        agent = GetComponent<NavMeshAgent>(); 
+        agent = GetComponent<NavMeshAgent>();
+
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player").transform;
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("Player not assigned and not found in the scene. Make sure the player has the 'Player' tag.");
+        }
+
+        Collider playerCollider = player.GetComponent<Collider>();
+        Collider enemyCollider = GetComponent<Collider>();
+
+        if (playerCollider != null && enemyCollider != null)
+        {
+            Physics.IgnoreCollision(playerCollider, enemyCollider, true); 
+        }
     }
 
     void Update()
     {
-        if (isPlayerInRange)
-        {
-            agent.SetDestination(player.position);
+        if (player == null) return;
 
-            if (Vector3.Distance(transform.position, player.position) <= killDistance)
-            {
-                KillPlayer();
-            }
-        }
-        else
-        {
-            agent.SetDestination(transform.position); 
-        }
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        if (Vector3.Distance(transform.position, player.position) <= detectionRadius)
+        if (distanceToPlayer <= detectionRadius)
         {
             isPlayerInRange = true;
+            agent.SetDestination(player.position); 
         }
         else
         {
             isPlayerInRange = false;
+            agent.SetDestination(transform.position); 
+        }
+
+        if (isPlayerInRange && distanceToPlayer <= killDistance)
+        {
+            KillPlayer();
         }
     }
 
     void KillPlayer()
     {
-        Debug.Log("PlayerKilled");
-
-player.gameObject.SetActive(false); 
+        PlayerMovement playerScript = player.GetComponent<PlayerMovement>();
+        if (playerScript != null)
+        {
+            playerScript.Respawn(); 
+            Debug.Log("Player killed by enemy and respawned.");
+        }
     }
 }
