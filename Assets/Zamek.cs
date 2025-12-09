@@ -1,77 +1,84 @@
 using System.Collections;
 using UnityEngine;
-using TMPro; // Pamiêtaj o TextMeshPro
+using TMPro;
 
 public class CombinationLock : MonoBehaviour
 {
     [Header("Ustawienia Zamka")]
-    public GameObject[] lockCylinders; // Tablica 3 cylindrów (przypisz w kolejnoœci od lewej do prawej)
+    public GameObject[] lockCylinders; // Tablica 3 cylindrów (przypisz obiekty w Unity)
     public int[] correctCombination;   // Prawid³owy kod, np. 1, 2, 3
 
-    [Header("Ustawienia Kamery")]
+    [Header("Ustawienia Kamery i Interakcji")]
     public Transform inspectionPoint;  // Pusty obiekt: Gdzie kamera ma siê ustawiæ
-    public float transitionSpeed = 2f; // Szybkoœæ zbli¿ania
+    public float transitionSpeed = 2f; // Szybkoœæ zbli¿ania kamery
+    public float interactionDistance = 4f; // Zasiêg dzia³ania klawisza E
+    public LayerMask interactionLayer = ~0; // Warstwy
 
     [Header("Ustawienia Gracza")]
     public MonoBehaviour playerMovementScript; // Skrypt ruchu gracza
-    public MonoBehaviour cameraLookScript;     // Skrypt obracania kamer¹
+    public MonoBehaviour cameraLookScript;     // Skrypt rozgl¹dania siê
 
     [Header("UI")]
-    public TMP_Text statusText;       // Tekst "Otwarto" lub "Z³y kod"
-    public GameObject crosshair;      // Celownik (warto go ukryæ przy zbli¿eniu)
+    public TMP_Text statusText;       // Tekst stanu (np. "Otwarto")
+    public GameObject crosshair;      // Celownik
+
+    [Header("Po³¹czenia")]
+    public DoorController doorToOpen; // <-- TU PRZYPISZ DRZWI ZE SKRYPTEM DoorController
 
     // Prywatne zmienne stanu
     private int[] currentValues;      // Przechowuje aktualne cyfry na cylindrach
     private bool isInteracting = false;
-    private Transform originalCameraParent;
     private Vector3 originalCameraPosition;
     private Quaternion originalCameraRotation;
     private Camera mainCam;
-    private bool isRotating = false;  // Zabezpieczenie przed spamowaniem klikniêæ
+    private bool isRotating = false;
+    private bool isLockSolved = false; // Blokada po otwarciu
 
     void Start()
     {
-        // Inicjalizacja tablicy wartoœci (domyœlnie same zera)
         currentValues = new int[lockCylinders.Length];
         mainCam = Camera.main;
+
+        if (inspectionPoint == null) Debug.LogError("B£¥D: Nie przypisano 'InspectionPoint'!");
+        if (mainCam == null) Debug.LogError("B£¥D: Brak MainCamera!");
     }
 
     void Update()
     {
-        // 1. Jeœli nie interagujemy, sprawdzamy czy gracz celuje w "Zamek" i klika E
+        if (isLockSolved) return; // Jeœli zamek otwarty, nic nie rób
+
+        // 1. Tryb chodzenia
         if (!isInteracting)
         {
-            // ZMIANA: Wejœcie klawiszem E
             if (Input.GetKeyDown(KeyCode.E))
             {
                 Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
                 RaycastHit hit;
-                // Zak³adamy, ¿e ten skrypt jest na obiekcie, który ma Collider (obudowa zamka)
-                if (Physics.Raycast(ray, out hit, 3f))
+
+                if (Physics.Raycast(ray, out hit, interactionDistance, interactionLayer))
                 {
-                    if (hit.transform == this.transform || IsPartOfLock(hit.transform))
+                    CombinationLock hitLock = hit.transform.GetComponentInParent<CombinationLock>();
+                    if (hitLock == this)
                     {
                         EnterLockMode();
                     }
                 }
             }
         }
-        // 2. Jeœli interagujemy (jesteœmy w zbli¿eniu)
+        // 2. Tryb interakcji (zbli¿enie)
         else
         {
-            // ZMIANA: Wyjœcie klawiszem E (zamiast Escape)
             if (Input.GetKeyDown(KeyCode.E))
             {
                 ExitLockMode();
             }
 
-            // Klikanie w cylindry (nadal lewym przyciskiem myszy, bo to wygodne)
             if (Input.GetMouseButtonDown(0) && !isRotating)
             {
                 Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
 
-                if (Physics.Raycast(ray, out hit))
+                if (Physics.Raycast(ray, out hit, 10f, interactionLayer))
                 {
                     CheckCylinderHit(hit.transform);
                 }
@@ -79,7 +86,6 @@ public class CombinationLock : MonoBehaviour
         }
     }
 
-    // Sprawdza czy klikniêty obiekt to jeden z cylindrów
     void CheckCylinderHit(Transform hitObject)
     {
         for (int i = 0; i < lockCylinders.Length; i++)
@@ -92,38 +98,29 @@ public class CombinationLock : MonoBehaviour
         }
     }
 
-    // Obraca cylinder i aktualizuje matematykê
     IEnumerator RotateCylinder(int index)
     {
         isRotating = true;
 
-        // 1. Aktualizacja wartoœci (matematyka)
+        // Matematyka wartoœci
         currentValues[index]++;
         if (currentValues[index] > 9) currentValues[index] = 0;
 
-        // --- LOGOWANIE WARTOŒCI ---
-        Debug.Log($"Cylinder {index} (obrócony) wskazuje teraz: {currentValues[index]}");
-        // -------------------------------
-
-        // 2. Obrót wizualny (animacja)
+        // Animacja obrotu
         Quaternion startRot = lockCylinders[index].transform.localRotation;
-
-        // ZMIANA: Obrót na osi Y (druga oœ) o -36 stopni
-        Quaternion endRot = startRot * Quaternion.Euler(0, -36, 0);
+        Quaternion endRot = startRot * Quaternion.Euler(0, -36, 0); // Zmieñ oœ, jeœli trzeba
 
         float t = 0;
         while (t < 1f)
         {
-            t += Time.deltaTime * 5f; // Szybkoœæ obrotu cylindra
+            t += Time.deltaTime * 5f;
             lockCylinders[index].transform.localRotation = Quaternion.Slerp(startRot, endRot, t);
             yield return null;
         }
-        // Upewniamy siê, ¿e rotacja jest idealna na koniec
         lockCylinders[index].transform.localRotation = endRot;
 
         isRotating = false;
 
-        // 3. SprawdŸ czy kod jest poprawny
         CheckCombination();
     }
 
@@ -141,38 +138,56 @@ public class CombinationLock : MonoBehaviour
 
         if (isCorrect)
         {
-            if (statusText) statusText.text = "SZYFR POPRAWNY!";
-            statusText.color = Color.green;
-            Debug.Log("Otwarto!");
-            // Tutaj dodaj logikê otwierania drzwi/sejfów
+            if (statusText)
+            {
+                statusText.text = "OTWARTE";
+                statusText.color = Color.green;
+            }
+
+            Debug.Log("SZYFR POPRAWNY - OTWIERANIE DRZWI!");
+
+            // --- NOWA CZÊŒÆ: OTWIERANIE DRZWI ---
+            if (doorToOpen != null)
+            {
+                doorToOpen.OpenDoor();
+                isLockSolved = true; // Zapobiega dalszemu klikaniu
+
+                // Opcjonalnie: Automatyczne wyjœcie z trybu zamka po 1 sekundzie
+                StartCoroutine(AutoExitAfterSuccess());
+            }
+            else
+            {
+                Debug.LogWarning("Przypisz obiekt drzwi w polu 'Door To Open' w Inspectorze!");
+            }
         }
         else
         {
-            if (statusText) statusText.text = ""; // Czyœcimy tekst jak jest Ÿle
+            if (statusText) statusText.text = "";
         }
     }
 
-    // --- LOGIKA KAMERY I BLOKADY GRACZA ---
+    // Dodatek: Czeka chwilê i wychodzi z trybu zamka po otwarciu
+    IEnumerator AutoExitAfterSuccess()
+    {
+        yield return new WaitForSeconds(1.0f);
+        ExitLockMode();
+    }
+
+    // --- LOGIKA KAMERY ---
 
     void EnterLockMode()
     {
         isInteracting = true;
-
-        // Zapisz pozycjê gracza
         originalCameraPosition = mainCam.transform.position;
         originalCameraRotation = mainCam.transform.rotation;
-        originalCameraParent = mainCam.transform.parent;
 
-        // Zablokuj ruch gracza
         if (playerMovementScript) playerMovementScript.enabled = false;
         if (cameraLookScript) cameraLookScript.enabled = false;
         if (crosshair) crosshair.SetActive(false);
 
-        // Poka¿ kursor
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // Rozpocznij animacjê kamery
         StopAllCoroutines();
         StartCoroutine(MoveCameraToInspection());
     }
@@ -180,13 +195,10 @@ public class CombinationLock : MonoBehaviour
     void ExitLockMode()
     {
         isInteracting = false;
-
-        // Ukryj kursor
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         if (crosshair) crosshair.SetActive(true);
 
-        // Rozpocznij powrót kamery
         StopAllCoroutines();
         StartCoroutine(ReturnCameraToPlayer());
     }
@@ -204,6 +216,8 @@ public class CombinationLock : MonoBehaviour
             mainCam.transform.rotation = Quaternion.Slerp(startRot, inspectionPoint.rotation, t);
             yield return null;
         }
+        mainCam.transform.position = inspectionPoint.position;
+        mainCam.transform.rotation = inspectionPoint.rotation;
     }
 
     IEnumerator ReturnCameraToPlayer()
@@ -219,23 +233,10 @@ public class CombinationLock : MonoBehaviour
             mainCam.transform.rotation = Quaternion.Slerp(startRot, originalCameraRotation, t);
             yield return null;
         }
-
-        // Przywróæ sterowanie po zakoñczeniu animacji
-        if (playerMovementScript) playerMovementScript.enabled = true;
-        if (cameraLookScript) cameraLookScript.enabled = true;
-
-        // Upewnij siê, ¿e kamera wróci³a idealnie na miejsce
         mainCam.transform.position = originalCameraPosition;
         mainCam.transform.rotation = originalCameraRotation;
-    }
 
-    // Pomocnicza funkcja sprawdzaj¹ca czy kliknêliœmy w czêœæ zamka (np. cylindry)
-    bool IsPartOfLock(Transform t)
-    {
-        foreach (var cyl in lockCylinders)
-        {
-            if (t.gameObject == cyl) return true;
-        }
-        return false;
+        if (playerMovementScript) playerMovementScript.enabled = true;
+        if (cameraLookScript) cameraLookScript.enabled = true;
     }
 }
