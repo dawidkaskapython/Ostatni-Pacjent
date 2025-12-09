@@ -2096,13 +2096,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Mutated1 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1855989003265106635, guid: ced1ce572a48a4579b869cebbfd18c90, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -3.11
+      objectReference: {fileID: 0}
     - target: {fileID: 1856349326787631848, guid: ced1ce572a48a4579b869cebbfd18c90, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1.6912466
       objectReference: {fileID: 0}
     - target: {fileID: 1856349326787631848, guid: ced1ce572a48a4579b869cebbfd18c90, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.0977573
+      value: 0.66
       objectReference: {fileID: 0}
     - target: {fileID: 1856349326787631848, guid: ced1ce572a48a4579b869cebbfd18c90, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2638,7 +2642,7 @@ GameObject:
   - component: {fileID: 867124014}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3769,7 +3773,7 @@ GameObject:
   - component: {fileID: 1165694658}
   m_Layer: 5
   m_Name: Canvas
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3988,13 +3992,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1167901708}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.04686375, y: 0.18846598, z: 0.23671626, w: 0.95197153}
+  m_LocalRotation: {x: 0, y: 0, z: -1, w: 0}
   m_LocalPosition: {x: 7.785, y: 3.842, z: -0.23}
-  m_LocalScale: {x: 0.18683, y: 0.18683, z: 0.18683}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -10.28, y: 20.007, z: 26.11}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -180}
 --- !u!1 &1173536742
 GameObject:
   m_ObjectHideFlags: 0
@@ -5951,6 +5955,10 @@ PrefabInstance:
     - target: {fileID: 2043919424448136195, guid: 8f317dd6ea755c245930aa07e0fc3714, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043919424448136195, guid: 8f317dd6ea755c245930aa07e0fc3714, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
