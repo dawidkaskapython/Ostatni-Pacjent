@@ -3,33 +3,42 @@ using UnityEngine.AI;
 
 public class EnemyScript : MonoBehaviour
 {
-    public Transform player; 
-    public float detectionRadius = 10f; 
-    public float killDistance = 1f; 
+    public Transform player;
+    public float detectionRadius = 10f;
+    public float killDistance = 2f;
 
     private NavMeshAgent agent;
-    private bool isPlayerInRange = false;
+    private Vector3 playerStartPos;
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
 
+        // Znajd� gracza po tagu
         if (player == null)
         {
-            player = GameObject.FindGameObjectWithTag("Player").transform;
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null)
+            {
+                player = p.transform;
+            }
+            else
+            {
+                Debug.LogError("Nie znaleziono obiektu z tagiem PLAYER!");
+                return;
+            }
         }
 
-        if (player == null)
-        {
-            Debug.LogError("Player not assigned and not found in the scene. Make sure the player has the 'Player' tag.");
-        }
+        // Zapami�taj startow� pozycj� gracza (respawn)
+        playerStartPos = player.position;
 
+        // Wy��cz kolizj� mi�dzy wrogiem a graczem (wa�ne dla NavMeshAgent)
         Collider playerCollider = player.GetComponent<Collider>();
         Collider enemyCollider = GetComponent<Collider>();
 
         if (playerCollider != null && enemyCollider != null)
         {
-            Physics.IgnoreCollision(playerCollider, enemyCollider, true); 
+            Physics.IgnoreCollision(playerCollider, enemyCollider, true);
         }
     }
 
@@ -39,30 +48,29 @@ public class EnemyScript : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
+        // �LEDZENIE
         if (distanceToPlayer <= detectionRadius)
-        {
-            isPlayerInRange = true;
-            agent.SetDestination(player.position); 
-        }
+            agent.SetDestination(player.position);
         else
-        {
-            isPlayerInRange = false;
-            agent.SetDestination(transform.position); 
-        }
+            agent.SetDestination(transform.position);
 
-        if (isPlayerInRange && distanceToPlayer <= killDistance)
-        {
+        // ZABICIE
+        if (distanceToPlayer <= killDistance)
             KillPlayer();
-        }
     }
 
     void KillPlayer()
     {
-        PlayerMovement playerScript = player.GetComponent<PlayerMovement>();
-        if (playerScript != null)
+        // teleport gracza (bo u�ywasz Rigidbody + FirstPersonMovement)
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+
+        if (rb != null)
         {
-            playerScript.Respawn(); 
-            Debug.Log("Player killed by enemy and respawned.");
+            rb.linearVelocity = Vector3.zero;
         }
+
+        player.position = playerStartPos;
+
+        Debug.Log("PLAYER DEAD ? respawn.");
     }
 }

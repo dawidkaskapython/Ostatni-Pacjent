@@ -55,7 +55,12 @@ public class PlayerMovement : MonoBehaviour
 
     public void Respawn()
     {
+        controller.enabled = false;
         transform.position = respawnPosition;
+        controller.enabled = true;
+
+        velocity = Vector3.zero;
+
         Debug.Log("Player respawned");
     }
 }
