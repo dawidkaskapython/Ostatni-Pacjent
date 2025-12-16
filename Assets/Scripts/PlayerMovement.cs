@@ -17,7 +17,10 @@ public class PlayerMovement : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
-        respawnPosition = Checkpoint.lastCheckpointPosition != Vector3.zero ? Checkpoint.lastCheckpointPosition : transform.position;
+        respawnPosition = PlayerRespawn.currentCheckpoint != null
+            ? PlayerRespawn.currentCheckpoint.position
+            : transform.position;
+
     }
 
     void Update()
@@ -55,7 +58,12 @@ public class PlayerMovement : MonoBehaviour
 
     public void Respawn()
     {
+        controller.enabled = false;
         transform.position = respawnPosition;
+        controller.enabled = true;
+
+        velocity = Vector3.zero;
+
         Debug.Log("Player respawned");
     }
 }
