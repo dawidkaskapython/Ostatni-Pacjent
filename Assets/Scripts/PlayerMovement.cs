@@ -8,14 +8,19 @@ public class PlayerMovement : MonoBehaviour
     public float mouseSensitivity = 100f;
     public Transform cameraTransform;
 
-    float xRotation = 0f;
-    CharacterController controller;
-    Vector3 velocity;
+    private Vector3 respawnPosition;
+    private float xRotation = 0f;
+    private CharacterController controller;
+    private Vector3 velocity;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        Cursor.lockState = CursorLockMode.Locked; // ukrywa i blokuje kursor
+        Cursor.lockState = CursorLockMode.Locked;
+        respawnPosition = PlayerRespawn.currentCheckpoint != null
+            ? PlayerRespawn.currentCheckpoint.position
+            : transform.position;
+
     }
 
     void Update()
@@ -32,9 +37,8 @@ public class PlayerMovement : MonoBehaviour
         Vector3 move = transform.right * x + transform.forward * z;
         controller.Move(move * speed * Time.deltaTime);
 
-        // Grawitacja
         if (controller.isGrounded && velocity.y < 0)
-            velocity.y = -2f;
+            velocity.y = -5f; 
 
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
@@ -50,5 +54,16 @@ public class PlayerMovement : MonoBehaviour
 
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
+    }
+
+    public void Respawn()
+    {
+        controller.enabled = false;
+        transform.position = respawnPosition;
+        controller.enabled = true;
+
+        velocity = Vector3.zero;
+
+        Debug.Log("Player respawned");
     }
 }

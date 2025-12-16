@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Threading;
 
 public class TriggerHideYellowLight : MonoBehaviour
 {
@@ -24,7 +25,7 @@ public class TriggerHideYellowLight : MonoBehaviour
             Debug.Log("Ukryto dziecko (model + œwiat³o): " + yellowLightChild.name);
 
             // Uruchamiamy korutynê, która w³¹czy latarkê po 3 sekundach
-            StartCoroutine(ReenableAfterDelay(3f));
+            StartCoroutine(ReenableAfterDelay(3, 0.1f));
         }
     }
 
@@ -38,15 +39,25 @@ public class TriggerHideYellowLight : MonoBehaviour
         }
     }
 
-    private IEnumerator ReenableAfterDelay(float delay)
+    private IEnumerator ReenableAfterDelay(int count, float delay)
     {
         yield return new WaitForSeconds(delay);
 
         // SprawdŸ, czy gracz wci¹¿ jest w triggerze
         if (playerInside && yellowLightChild != null)
-        {
-            SetYellowLight(true); // w³¹cz latarkê po 3 sekundach
-            Debug.Log("Automatycznie w³¹czono latarkê po 3 sekundach: " + yellowLightChild.name);
+        {   
+            for(int i =0; i < count; i++)
+            {
+               SetYellowLight(true);
+               yield return new WaitForSeconds(delay);
+               SetYellowLight(false);
+               yield return new WaitForSeconds(delay);
+            }
+        SetYellowLight(false);
+        yield return new WaitForSeconds(3f);
+        SetYellowLight(true);
+
+
         }
     }
 
