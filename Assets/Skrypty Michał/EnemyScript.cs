@@ -15,7 +15,7 @@ public class EnemyScript : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
 
-        // Zapamiêtujemy gdzie sta³ wróg na pocz¹tku gry
+        // Zapamiï¿½tujemy gdzie staï¿½ wrï¿½g na poczï¿½tku gry
         startPosition = transform.position;
 
         agent.stoppingDistance = 1.0f;
@@ -28,7 +28,7 @@ public class EnemyScript : MonoBehaviour
         }
     }
 
-    // --- Pod³¹czamy siê do eventu œmierci ---
+    // --- Podï¿½ï¿½czamy siï¿½ do eventu ï¿½mierci ---
     void OnEnable()
     {
         PlayerEvents.OnPlayerDeath += TeleportToStart;
@@ -46,12 +46,12 @@ public class EnemyScript : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // 1. Logika poœcigu (tylko gdy gracz jest blisko)
+        // 1. Logika poï¿½cigu (tylko gdy gracz jest blisko)
         if (distanceToPlayer <= detectionRadius)
         {
             agent.SetDestination(player.position);
 
-            // Sprawdzenie czy z³apa³ gracza
+            // Sprawdzenie czy zï¿½apaï¿½ gracza
             if (distanceToPlayer <= killDistance)
             {
                 KillPlayer();
@@ -59,37 +59,37 @@ public class EnemyScript : MonoBehaviour
         }
         else
         {
-            // Opcjonalnie: Jeœli gracz po prostu uciek³ (¿yje, ale jest daleko),
-            // to wróg mo¿e powoli wracaæ spacerem.
-            // Jeœli chcesz, ¿eby wróg sta³ w miejscu jak zgubi gracza, wykasuj liniê poni¿ej.
+            // Opcjonalnie: Jeï¿½li gracz po prostu uciekï¿½ (ï¿½yje, ale jest daleko),
+            // to wrï¿½g moï¿½e powoli wracaï¿½ spacerem.
+            // Jeï¿½li chcesz, ï¿½eby wrï¿½g staï¿½ w miejscu jak zgubi gracza, wykasuj liniï¿½ poniï¿½ej.
             agent.SetDestination(startPosition);
         }
     }
 
     void KillPlayer()
     {
-        Debug.Log("DOTKNIÊCIE - ŒMIERÆ GRACZA");
+        Debug.Log("DOTKNIï¿½CIE - ï¿½MIERï¿½ GRACZA");
 
-        // Wywo³ujemy event (to zresetuje te¿ gracza)
+        // Wywoï¿½ujemy event (to zresetuje teï¿½ gracza)
         PlayerEvents.OnPlayerDeath?.Invoke();
 
-        // UWAGA: Tutaj nie musimy wywo³ywaæ teleportacji rêcznie,
-        // zrobi to funkcja TeleportToStart, która "s³ucha" tego eventu.
+        // UWAGA: Tutaj nie musimy wywoï¿½ywaï¿½ teleportacji rï¿½cznie,
+        // zrobi to funkcja TeleportToStart, ktï¿½ra "sï¿½ucha" tego eventu.
     }
 
-    // Ta funkcja wykonuje siê automatycznie, gdy gracz zginie
+    // Ta funkcja wykonuje siï¿½ automatycznie, gdy gracz zginie
     void TeleportToStart()
     {
         if (isDead || agent == null) return;
 
-        // 1. Resetujemy œcie¿kê (¿eby przesta³ biec)
+        // 1. Resetujemy ï¿½cieï¿½kï¿½ (ï¿½eby przestaï¿½ biec)
         agent.ResetPath();
 
         // 2. NATYCHMIASTOWA TELEPORTACJA (WARP)
-        // Warp jest konieczny dla NavMeshAgenta, zwyk³e transform.position by go zepsu³o
+        // Warp jest konieczny dla NavMeshAgenta, zwykï¿½e transform.position by go zepsuï¿½o
         agent.Warp(startPosition);
 
-        // Opcjonalnie: Obracamy go do pocz¹tkowej rotacji (jeœli chcesz)
+        // Opcjonalnie: Obracamy go do poczï¿½tkowej rotacji (jeï¿½li chcesz)
         // transform.rotation = Quaternion.identity; 
     }
 
@@ -101,7 +101,7 @@ public class EnemyScript : MonoBehaviour
             agent.isStopped = true;
             agent.enabled = false;
         }
-        Debug.Log("Wróg zabity latark¹.");
+        Debug.Log("Wrï¿½g zabity latarkï¿½.");
         Destroy(gameObject, 0.5f);
     }
 }
