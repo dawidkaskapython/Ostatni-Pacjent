@@ -4,11 +4,15 @@ using System.Collections;
 public class FlashlightEffect : MonoBehaviour
 {
     [Header("--- USTAWIENIA BOJOWE ---")]
-    [Tooltip("Maksymalny zasięg ataku w metrach")]
     public float flashRange = 1f;
-
-    [Tooltip("Szerokość promienia (im mniejszy, tym precyzyjniejszy zasięg)")]
     public float beamRadius = 1.0f;
+
+    [Header("--- AUDIO ---")]
+    [Tooltip("Dźwięk ładowania (powinien być zapętlony w ustawieniach klipu)")]
+    public AudioClip chargeSound;
+    [Tooltip("Dźwięk samego błysku/strzału")]
+    public AudioClip flashSound;
+    private AudioSource audioSource;
 
     [Header("Ważne")]
     public Transform cameraTransform;
@@ -31,9 +35,7 @@ public class FlashlightEffect : MonoBehaviour
     public float flashHoldTime = 0.1f;
     public float cooldownTime = 2f;
 
-    // Zapamiętujemy domyślny zasięg światła, żeby go przywrócić po strzale
     private float defaultLightRange;
-
     private bool isOnCooldown = false;
 
     // DEBUG (Linie pomocnicze)
@@ -45,11 +47,17 @@ public class FlashlightEffect : MonoBehaviour
 
     void Start()
     {
-        // Automatyczne przypisanie kamery
+        // Konfiguracja AudioSource
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            // Jeśli nie masz komponentu na obiekcie, skrypt sam go doda
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
         if (cameraTransform == null)
         {
             if (Camera.main != null) cameraTransform = Camera.main.transform;
-            else Debug.LogError("BRAK KAMERY! Przypisz MainCamera w Inspectorze.");
         }
 
         if (flashlightColor != null)
@@ -57,8 +65,6 @@ public class FlashlightEffect : MonoBehaviour
             yellowLight = flashlightColor.Find("YellowLight").GetComponent<Light>();
             yellowLight.spotAngle = baseSpotAngle;
             yellowLight.intensity = baseIntensity;
-
-            // Zapamiętaj ustawienie z Inspectora
             defaultLightRange = yellowLight.range;
         }
 
@@ -77,16 +83,28 @@ public class FlashlightEffect : MonoBehaviour
     IEnumerator ChargeRoutine()
     {
         float t = 0f;
+
+        // Odtwarzaj dźwięk ładowania
+        if (chargeSound != null)
+        {
+            audioSource.clip = chargeSound;
+            audioSource.loop = true;
+            audioSource.Play();
+        }
+
         while (Input.GetKey(KeyCode.F))
         {
             t += Time.deltaTime;
-            // Animacja ładowania
+
+            // Podnosimy wysokość dźwięku (pitch) wraz z ładowaniem dla lepszego efektu
+            audioSource.pitch = Mathf.Lerp(1f, 1.5f, t / chargeTime);
+
             if (yellowLight != null)
             {
                 yellowLight.spotAngle = Mathf.Lerp(baseSpotAngle, chargeTargetSpot, t / chargeTime);
                 yellowLight.intensity = Mathf.Lerp(baseIntensity, chargeTargetIntensity, t / chargeTime);
             }
-            // Trzęsienie kamerą
+
             if (cameraTransform != null)
             {
                 cameraTransform.localPosition = originalCameraPos + (Random.insideUnitSphere * shakeAmount) * Mathf.Sin(Time.time * shakeSpeed);
@@ -94,24 +112,31 @@ public class FlashlightEffect : MonoBehaviour
 
             if (t >= chargeTime)
             {
+                audioSource.Stop(); // Zatrzymaj ładowanie
+                audioSource.pitch = 1f;
                 StartCoroutine(FlashSequence());
                 ResetCamera();
                 yield break;
             }
             yield return null;
         }
+
+        // Jeśli puścisz F przed czasem
+        audioSource.Stop();
+        audioSource.pitch = 1f;
         ResetCamera();
         StartCoroutine(ReturnToBase());
-    }
-
-    void ResetCamera()
-    {
-        if (cameraTransform != null) cameraTransform.localPosition = originalCameraPos;
     }
 
     IEnumerator FlashSequence()
     {
         isOnCooldown = true;
+
+        // Odtwórz dźwięk strzału (jednorazowo)
+        if (flashSound != null)
+        {
+            audioSource.PlayOneShot(flashSound);
+        }
 
         if (yellowLight != null)
         {
@@ -119,40 +144,23 @@ public class FlashlightEffect : MonoBehaviour
             yellowLight.intensity = flashIntensity;
         }
 
-        // ───────────────────────────────────────────────
-        // LOGIKA ATAKU Z "BEZPIECZNIKIEM" DYSTANSU
-
+        // --- LOGIKA ATAKU (bez zmian) ---
         Vector3 origin = cameraTransform.position;
         Vector3 direction = cameraTransform.forward;
-
-        // Startujemy minimalnie przed kamerą
         Vector3 startPoint = origin + (direction * 0.5f);
-
         debugStart = startPoint;
         debugHit = false;
-        debugTimer = 3.0f; // Debug wyświetla się przez 3 sekundy
+        debugTimer = 3.0f;
 
-        // Pobieramy WSZYSTKO na drodze
         RaycastHit[] hits = Physics.SphereCastAll(startPoint, beamRadius, direction, flashRange, ~0, QueryTriggerInteraction.Collide);
-
         RaycastHit bestHit = new RaycastHit();
         bool foundValidTarget = false;
         float minDistance = float.MaxValue;
 
         foreach (RaycastHit hit in hits)
         {
-            // 1. FILTR: Musi być WRÓG
             if (!hit.collider.CompareTag("Enemy")) continue;
-
-            // 2. FILTR: Musi być BLISKO (Naprawa błędu "zabijania z kilometra")
-            // Ignorujemy trafienia, które matematycznie są dalej niż limit
-            if (hit.distance > flashRange)
-            {
-                // Debug.Log($"Ignoruję wroga {hit.collider.name} bo jest za daleko ({hit.distance}m > {flashRange}m)");
-                continue;
-            }
-
-            // Szukamy najbliższego z poprawnych celów
+            if (hit.distance > flashRange) continue;
             if (hit.distance < minDistance)
             {
                 minDistance = hit.distance;
@@ -161,31 +169,22 @@ public class FlashlightEffect : MonoBehaviour
             }
         }
 
-        // Wykonanie wyroku
         if (foundValidTarget)
         {
             debugEnd = startPoint + (direction * bestHit.distance);
             debugHit = true;
             debugHitSize = beamRadius;
-
-            Debug.Log($"<color=red>!!! TRAFIONO WROGA !!!</color> Dystans: {bestHit.distance:F1}m / Limit: {flashRange}m");
-
             var enemyScript = bestHit.collider.GetComponentInParent<EnemyScript>();
             if (enemyScript != null) enemyScript.DieByFlashlight();
             else Destroy(bestHit.collider.gameObject);
         }
         else
         {
-            // Pudło
             debugEnd = startPoint + (direction * flashRange);
-            Debug.Log($"<color=gray>[PUDŁO] Nic w zasięgu {flashRange}m.</color>");
         }
-
-        // ───────────────────────────────────────────────
 
         yield return new WaitForSeconds(flashHoldTime);
 
-        // Powrót do normy
         if (yellowLight != null)
         {
             yellowLight.spotAngle = baseSpotAngle;
@@ -193,12 +192,12 @@ public class FlashlightEffect : MonoBehaviour
         }
 
         yield return new WaitForSeconds(cooldownTime);
-
-        // Przywracamy stary zasięg światła
         if (yellowLight != null) yellowLight.range = defaultLightRange;
-
         isOnCooldown = false;
     }
+
+    // Reszta metod (ResetCamera, ReturnToBase, OnDrawGizmos) pozostaje bez zmian
+    void ResetCamera() { if (cameraTransform != null) cameraTransform.localPosition = originalCameraPos; }
 
     IEnumerator ReturnToBase()
     {
@@ -218,10 +217,8 @@ public class FlashlightEffect : MonoBehaviour
         }
     }
 
-    // --- WIZUALIZACJA ---
     void OnDrawGizmos()
     {
-        // 1. PODGLĄD NA ŻYWO (SZARY) - pokazuje aktualne ustawienia przed strzałem
         if (cameraTransform != null)
         {
             Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
@@ -229,8 +226,6 @@ public class FlashlightEffect : MonoBehaviour
             Gizmos.DrawRay(start, cameraTransform.forward * flashRange);
             Gizmos.DrawWireSphere(start + (cameraTransform.forward * flashRange), beamRadius);
         }
-
-        // 2. WYNIK STRZAŁU (KOLOROWY) - zostaje na ekranie przez 3 sekundy
         if (debugTimer > 0)
         {
             debugTimer -= Time.deltaTime;

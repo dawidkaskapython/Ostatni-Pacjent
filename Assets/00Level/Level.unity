@@ -491,6 +491,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flashRange: 10
   beamRadius: 1
+  chargeSound: {fileID: 8300000, guid: 54557e9c56901984b9750d12effcdd5d, type: 3}
+  flashSound: {fileID: 8300000, guid: 84d9581fe28f4d445a13389ce875b54a, type: 3}
   cameraTransform: {fileID: 0}
   flashlightColor: {fileID: 2124062358}
   shakeAmount: 0.05
@@ -81730,10 +81732,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 1298584834357058, guid: ae07f5a7e50d802419d96b04791e8cc0, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4082237453981962, guid: ae07f5a7e50d802419d96b04791e8cc0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.001
@@ -84343,3 +84341,8 @@ SceneRoots:
   - {fileID: 2091028805}
   - {fileID: 395668825}
   - {fileID: 409222793}
+  - {fileID: 528129234}
+  - {fileID: 1501712335}
+  - {fileID: 1698114520}
+  - {fileID: 1840641816}
+  - {fileID: 2103879042}
