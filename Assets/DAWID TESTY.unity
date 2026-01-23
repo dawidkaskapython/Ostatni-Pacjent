@@ -1583,8 +1583,8 @@ Transform:
   m_GameObject: {fileID: 193676463}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00003211945, y: -0.00003211945, z: 0.7071068, w: -0.7071068}
-  m_LocalPosition: {x: 7.3861, y: 1.2513, z: 6.208}
-  m_LocalScale: {x: 0.2, y: 0.1, z: 0.2}
+  m_LocalPosition: {x: 0.2698374, y: -0.016362237, z: -0.46194834}
+  m_LocalScale: {x: 0.8844411, y: 0.2870615, z: 1.1998711}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 505486762}
@@ -1597,7 +1597,7 @@ Transform:
   - {fileID: 1037667613}
   - {fileID: 1578943031}
   - {fileID: 1623607106}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1945828028}
   m_LocalEulerAnglesHint: {x: 0, y: 0.005, z: -90}
 --- !u!1001 &229639306
 PrefabInstance:
@@ -8472,8 +8472,8 @@ Transform:
   m_GameObject: {fileID: 1444226012}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00003211945, y: -0.00003211945, z: 0.7071068, w: -0.7071068}
-  m_LocalPosition: {x: 7.2973, y: 1.2513, z: 6.208}
-  m_LocalScale: {x: 0.2, y: 0.1, z: 0.2}
+  m_LocalPosition: {x: 0.014926937, y: -0.016362237, z: -0.46194834}
+  m_LocalScale: {x: 0.8844411, y: 0.2870615, z: 1.1998711}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1147739723}
@@ -8486,7 +8486,7 @@ Transform:
   - {fileID: 1143112308}
   - {fileID: 1502607857}
   - {fileID: 1410741165}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1945828028}
   m_LocalEulerAnglesHint: {x: 0, y: 0.005, z: -90}
 --- !u!1001 &1465618195
 PrefabInstance:
@@ -10132,7 +10132,10 @@ Transform:
   m_LocalPosition: {x: 7.2921, y: 1.255, z: 6.285}
   m_LocalScale: {x: 0.3483574, y: 0.22613154, z: 0.16668457}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1961770077}
+  - {fileID: 1444226018}
+  - {fileID: 193676469}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1961770071
@@ -11134,8 +11137,8 @@ Transform:
   m_GameObject: {fileID: 1961770071}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00003211945, y: -0.00003211945, z: 0.7071068, w: -0.7071068}
-  m_LocalPosition: {x: 7.2082, y: 1.2513, z: 6.208}
-  m_LocalScale: {x: 0.2, y: 0.1, z: 0.2}
+  m_LocalPosition: {x: -0.24084453, y: -0.016362237, z: -0.46194834}
+  m_LocalScale: {x: 0.8844411, y: 0.2870615, z: 1.1998711}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1437981030}
@@ -11148,7 +11151,7 @@ Transform:
   - {fileID: 50848068}
   - {fileID: 530820687}
   - {fileID: 855848792}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1945828028}
   m_LocalEulerAnglesHint: {x: 0, y: 0.005, z: -90}
 --- !u!1001 &1970870863
 PrefabInstance:
@@ -11553,6 +11556,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flashRange: 10
   beamRadius: 1
+  chargeSound: {fileID: 0}
+  flashSound: {fileID: 0}
   cameraTransform: {fileID: 0}
   flashlightColor: {fileID: 1579262436}
   shakeAmount: 0.05
@@ -11943,9 +11948,6 @@ SceneRoots:
   - {fileID: 944037624}
   - {fileID: 1945828028}
   - {fileID: 1869772474}
-  - {fileID: 1961770077}
-  - {fileID: 1444226018}
-  - {fileID: 193676469}
   - {fileID: 1787951046}
   - {fileID: 1674540817}
   - {fileID: 1277312157}
