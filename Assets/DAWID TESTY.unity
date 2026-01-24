@@ -2903,7 +2903,8 @@ Transform:
   m_LocalPosition: {x: 2.67, y: 0.48, z: -4.644}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1319415515}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &497648397
@@ -5749,6 +5750,10 @@ MonoBehaviour:
   mainMenuName: MainMenu
   pauseScreen: {fileID: 1340112325}
   messageText: {fileID: 0}
+  splashScreenObject: {fileID: 0}
+  splashText: {fileID: 0}
+  splashCanvasGroup: {fileID: 0}
+  fadeDuration: 1.5
 --- !u!114 &1165694659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6615,7 +6620,7 @@ GameObject:
   - component: {fileID: 1319415513}
   - component: {fileID: 1319415512}
   m_Layer: 0
-  m_Name: Spawn
+  m_Name: LocationSpawn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6704,11 +6709,11 @@ Transform:
   m_GameObject: {fileID: 1319415511}
   serializedVersion: 2
   m_LocalRotation: {x: 0.13240759, y: 0.69459933, z: 0.13240756, w: 0.6945994}
-  m_LocalPosition: {x: -6.377, y: -0.01, z: -4.79}
-  m_LocalScale: {x: 0.15147005, y: 0.15147004, z: 0.15147004}
+  m_LocalPosition: {x: -9.047, y: -0.48999998, z: -0.14599991}
+  m_LocalScale: {x: 0.15147007, y: 0.15147004, z: 0.15147004}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 446991174}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 21.585}
 --- !u!1 &1340112325
 GameObject:
@@ -11941,7 +11946,6 @@ SceneRoots:
   - {fileID: 1021963532}
   - {fileID: 125282377}
   - {fileID: 446991174}
-  - {fileID: 1319415515}
   - {fileID: 82307142}
   - {fileID: 1165694656}
   - {fileID: 1022891285}
