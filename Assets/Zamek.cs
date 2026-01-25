@@ -5,89 +5,77 @@ using TMPro;
 public class CombinationLock : MonoBehaviour
 {
     [Header("Ustawienia Zamka")]
-    public GameObject[] lockCylinders; // Tablica 3 cylindrów
-    public int[] correctCombination;   // Prawid³owy kod, np. 1, 2, 3
+    public GameObject[] lockCylinders; 
+    public int[] correctCombination;
 
     [Header("Ustawienia Kamery i Interakcji")]
-    public Transform inspectionPoint;   // Pusty obiekt: Gdzie kamera ma siê ustawiæ
-    public float transitionSpeed = 2f;  // Szybkoœæ zbli¿ania kamery
+    public Transform inspectionPoint;
+    public float transitionSpeed = 2.5f;  
     public float interactionDistance = 4f;
     public LayerMask interactionLayer = ~0;
 
     [Header("Ustawienia Gracza")]
+    public Transform playerRoot;
     public MonoBehaviour playerMovementScript;
     public MonoBehaviour cameraLookScript;
 
-    [Header("UI")]
+    [Header("UI Standardowe")]
     public TMP_Text statusText;
     public GameObject crosshair;
 
-    [Header("Po³¹czenia")]
+    [Header("NOWE: Tekst Sukcesu")]
+    [Tooltip("PrzeciÄ…gnij tutaj obiekt tekstowy z Canvy, ktÃ³ry ma siÄ™ pojawiÄ‡ po otwarciu.")]
+    public GameObject successUIObject; 
+    public float displayDuration = 5f;
+    public float shakeAmount = 3f;
+
+    [Header("PoÅ‚Ä…czenia")]
     public DoorController doorToOpen;
 
-    // Prywatne zmienne stanu
     private int[] currentValues;
     private bool isInteracting = false;
-    private Vector3 originalLocalPosition;
-    private Quaternion originalLocalRotation;
+    private Vector3 savedPlayerPos;
+    private Quaternion savedPlayerRot;
+    private Quaternion savedCameraRot;
     private Camera mainCam;
     private bool isRotating = false;
     private bool isLockSolved = false;
-
-    private Coroutine cameraRoutine; // Referencja do ruchu kamery
+    private Coroutine moveRoutine; 
 
     void Start()
     {
         currentValues = new int[lockCylinders.Length];
         mainCam = Camera.main;
 
-        if (inspectionPoint == null) Debug.LogError("B£¥D: Nie przypisano 'InspectionPoint'!");
-        if (mainCam == null) Debug.LogError("B£¥D: Brak MainCamera!");
-
-        // Zapamiêtujemy pozycjê startow¹ kamery wzglêdem gracza
-        originalLocalPosition = mainCam.transform.localPosition;
-        originalLocalRotation = mainCam.transform.localRotation;
+        // Upewniamy siÄ™, Å¼e tekst sukcesu jest schowany na starcie
+        if (successUIObject != null) successUIObject.SetActive(false);
     }
 
     void Update()
     {
         if (isLockSolved) return;
 
-        // 1. Tryb chodzenia
         if (!isInteracting)
         {
             if (Input.GetKeyDown(KeyCode.E))
             {
                 Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
                 RaycastHit hit;
-
                 if (Physics.Raycast(ray, out hit, interactionDistance, interactionLayer))
                 {
-                    CombinationLock hitLock = hit.transform.GetComponentInParent<CombinationLock>();
-                    if (hitLock == this)
-                    {
-                        EnterLockMode();
-                    }
+                    if (hit.transform.GetComponentInParent<CombinationLock>() == this) EnterLockMode();
                 }
             }
         }
-        // 2. Tryb interakcji
         else
         {
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                ExitLockMode();
-            }
+            if (Input.GetKeyDown(KeyCode.E)) ExitLockMode();
 
             if (Input.GetMouseButtonDown(0) && !isRotating)
             {
                 Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
-
-                if (Physics.Raycast(ray, out hit, 10f, interactionLayer))
-                {
-                    CheckCylinderHit(hit.transform);
-                }
+                if (Physics.Raycast(ray, out hit, 10f, interactionLayer)) CheckCylinderHit(hit.transform);
             }
         }
     }
@@ -107,23 +95,19 @@ public class CombinationLock : MonoBehaviour
     IEnumerator RotateCylinder(int index)
     {
         isRotating = true;
-
-        currentValues[index]++;
-        if (currentValues[index] > 9) currentValues[index] = 0;
+        currentValues[index] = (currentValues[index] + 1) % 10;
 
         Quaternion startRot = lockCylinders[index].transform.localRotation;
         Quaternion endRot = startRot * Quaternion.Euler(0, -36, 0);
 
         float t = 0;
-        float speed = 5f;
         while (t < 1f)
         {
-            t += Time.deltaTime * speed;
+            t += Time.deltaTime * 5f;
             lockCylinders[index].transform.localRotation = Quaternion.Slerp(startRot, endRot, t);
             yield return null;
         }
         lockCylinders[index].transform.localRotation = endRot;
-
         isRotating = false;
         CheckCombination();
     }
@@ -133,109 +117,121 @@ public class CombinationLock : MonoBehaviour
         bool isCorrect = true;
         for (int i = 0; i < correctCombination.Length; i++)
         {
-            if (currentValues[i] != correctCombination[i])
-            {
-                isCorrect = false;
-                break;
-            }
+            if (currentValues[i] != correctCombination[i]) { isCorrect = false; break; }
         }
 
         if (isCorrect)
         {
-            if (statusText)
-            {
-                statusText.text = "OTWARTE";
-                statusText.color = Color.green;
-            }
+            isLockSolved = true; // Blokujemy zamek przed dalszÄ… interakcjÄ…
 
-            if (doorToOpen != null)
-            {
-                doorToOpen.OpenDoor();
-                isLockSolved = true;
-                StartCoroutine(AutoExitAfterSuccess());
-            }
+            // --- TU ODPALAMY TWÃ“J TEKST ---
+            if (successUIObject != null) 
+                StartCoroutine(ShakeAndFadeUI());
+
+            if (statusText) { statusText.text = "OTWARTE"; statusText.color = Color.green; }
+            if (doorToOpen != null) doorToOpen.OpenDoor();
+            
+            StartCoroutine(AutoExitAfterSuccess());
         }
+    }
+
+    // --- KORUTYNA EFEKTU TEKSTU ---
+    IEnumerator ShakeAndFadeUI()
+    {
+        successUIObject.SetActive(true);
+        
+        // Dodajemy CanvasGroup jeÅ›li go nie ma, by mÃ³c pÅ‚ynnie wygasiÄ‡ (Alpha)
+        CanvasGroup group = successUIObject.GetComponent<CanvasGroup>();
+        if (group == null) group = successUIObject.AddComponent<CanvasGroup>();
+        
+        RectTransform rect = successUIObject.GetComponent<RectTransform>();
+        Vector2 originalPos = rect.anchoredPosition;
+        group.alpha = 1f;
+
+        float elapsed = 0f;
+
+        // 1. WyÅ›wietlanie i trzÄ™sienie
+        while (elapsed < displayDuration)
+        {
+            elapsed += Time.deltaTime;
+            float offsetX = Random.Range(-shakeAmount, shakeAmount);
+            float offsetY = Random.Range(-shakeAmount, shakeAmount);
+            rect.anchoredPosition = originalPos + new Vector2(offsetX, offsetY);
+            yield return null;
+        }
+
+        rect.anchoredPosition = originalPos; // Reset pozycji
+
+        // 2. PÅ‚ynne znikanie
+        float fadeElapsed = 0f;
+        while (fadeElapsed < 1f)
+        {
+            fadeElapsed += Time.deltaTime;
+            group.alpha = 1f - fadeElapsed;
+            yield return null;
+        }
+
+        successUIObject.SetActive(false);
     }
 
     IEnumerator AutoExitAfterSuccess()
     {
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(1.2f);
         ExitLockMode();
     }
 
-    // --- LOGIKA KAMERY ---
-
+    // --- LOGIKA KAMERY I RUCHU (BEZ ZMIAN) ---
     void EnterLockMode()
     {
         isInteracting = true;
-
-        // Zapisujemy aktualn¹ pozycjê lokaln¹ na wypadek, gdyby gracz siê zmieni³
-        originalLocalPosition = mainCam.transform.localPosition;
-        originalLocalRotation = mainCam.transform.localRotation;
-
-        if (playerMovementScript) playerMovementScript.enabled = false;
-        if (cameraLookScript) cameraLookScript.enabled = false;
+        CharacterController cc = playerRoot.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+        if (UIController.instance != null) UIController.instance.SetGameplayState(false);
         if (crosshair) crosshair.SetActive(false);
+
+        savedPlayerPos = playerRoot.position;
+        savedPlayerRot = playerRoot.rotation;
+        savedCameraRot = mainCam.transform.rotation;
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (cameraRoutine != null) StopCoroutine(cameraRoutine);
-        cameraRoutine = StartCoroutine(MoveCameraRoutine(inspectionPoint.position, inspectionPoint.rotation, true));
+        Vector3 targetPlayerPos = inspectionPoint.position - (mainCam.transform.position - playerRoot.position);
+        if (moveRoutine != null) StopCoroutine(moveRoutine);
+        moveRoutine = StartCoroutine(MovePlayerRoutine(targetPlayerPos, inspectionPoint.rotation, true));
     }
 
     void ExitLockMode()
     {
         isInteracting = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        if (crosshair) crosshair.SetActive(true);
-
-        if (cameraRoutine != null) StopCoroutine(cameraRoutine);
-        cameraRoutine = StartCoroutine(MoveCameraRoutine(Vector3.zero, Quaternion.identity, false));
+        if (moveRoutine != null) StopCoroutine(moveRoutine);
+        moveRoutine = StartCoroutine(MovePlayerRoutine(savedPlayerPos, savedCameraRot, false));
     }
 
-    IEnumerator MoveCameraRoutine(Vector3 targetPos, Quaternion targetRot, bool toInspection)
+    IEnumerator MovePlayerRoutine(Vector3 targetPos, Quaternion targetCamRot, bool toInspection)
     {
         float t = 0;
-        Vector3 startPos = mainCam.transform.position;
-        Quaternion startRot = mainCam.transform.rotation;
-
-        // Kluczowe zabezpieczenie: transitionSpeed musi byæ > 0
-        float safeSpeed = Mathf.Max(transitionSpeed, 0.1f);
+        Vector3 startPos = playerRoot.position;
+        Quaternion startBodyRot = playerRoot.rotation;
+        Quaternion startCamRot = mainCam.transform.rotation;
+        Quaternion targetBodyRot = toInspection ? Quaternion.LookRotation(Vector3.ProjectOnPlane(targetCamRot * Vector3.forward, Vector3.up)) : savedPlayerRot;
 
         while (t < 1f)
         {
-            t += Time.deltaTime * safeSpeed;
-
-            if (toInspection)
-            {
-                // Ruch do punktu w œwiecie
-                mainCam.transform.position = Vector3.Lerp(startPos, targetPos, t);
-                mainCam.transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
-            }
-            else
-            {
-                // Powrót do lokalnej pozycji wewn¹trz g³owy gracza
-                mainCam.transform.localPosition = Vector3.Lerp(mainCam.transform.localPosition, originalLocalPosition, t);
-                mainCam.transform.localRotation = Quaternion.Slerp(mainCam.transform.localRotation, originalLocalRotation, t);
-            }
+            t += Time.deltaTime * transitionSpeed;
+            float smoothT = t * t * (3f - 2f * t);
+            playerRoot.position = Vector3.Lerp(startPos, targetPos, smoothT);
+            playerRoot.rotation = Quaternion.Slerp(startBodyRot, targetBodyRot, smoothT);
+            mainCam.transform.rotation = Quaternion.Slerp(startCamRot, targetCamRot, smoothT);
             yield return null;
         }
 
-        if (toInspection)
+        if (!toInspection)
         {
-            mainCam.transform.position = targetPos;
-            mainCam.transform.rotation = targetRot;
-        }
-        else
-        {
-            mainCam.transform.localPosition = originalLocalPosition;
-            mainCam.transform.localRotation = originalLocalRotation;
-
-            // W³¹czamy skrypty dopiero PO zakoñczeniu ruchu powrotnego
-            if (playerMovementScript) playerMovementScript.enabled = true;
-            if (cameraLookScript) cameraLookScript.enabled = true;
+            CharacterController cc = playerRoot.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = true;
+            if (UIController.instance != null) UIController.instance.SetGameplayState(true);
+            if (crosshair) crosshair.SetActive(true);
         }
     }
 }

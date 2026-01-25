@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI; // Potrzebne do obsÅ‚ugi Image (tÅ‚a krwi)
 using System.Collections;
 
 public class UIController : MonoBehaviour
@@ -8,8 +9,8 @@ public class UIController : MonoBehaviour
     public static UIController instance;
 
     [Header("Player Control")]
-    public MonoBehaviour playerMovementScript;
-    public MonoBehaviour cameraLookScript;
+    public Behaviour playerMovementScript; 
+    public FirstPersonLook cameraLookScript;     
     public Rigidbody playerRigidbody;
 
     [Header("UI Elements")]
@@ -17,6 +18,7 @@ public class UIController : MonoBehaviour
     public string mainMenuName;
     public GameObject pauseScreen;
     public TMP_Text messageText;
+    public GameObject flashlightUI; // Slider lub Canvas latarki do ukrycia
 
     [Header("Splash Screens (Czarne Plansze)")]
     public GameObject splashScreenObject;
@@ -24,41 +26,46 @@ public class UIController : MonoBehaviour
     public CanvasGroup splashCanvasGroup;
     public float fadeDuration = 1.5f;
 
+    [Header("Death Screen Animation")]
+    public GameObject deathScreenObject;
+    public CanvasGroup deathPanelGroup;  // CanvasGroup caÅ‚ego panelu tÅ‚a
+    public CanvasGroup youDiedTextGroup; // CanvasGroup napisu "YOU DIED"
+    public GameObject respawnButton;    // Przycisk respawnu
+    public Image bloodBackground;       // Obrazek tÅ‚a (ustaw mu kolor czerwony)
+
     private bool isPaused = false;
     private bool isSplashActive = false;
     private bool isEndingSplash = false;
+    private bool isDead = false;
 
     private void Awake() => instance = this;
 
     void Start()
     {
-        if (splashScreenObject != null)
-        {
-            ShowStartSplash();
-        }
-        else
-        {
-            SetGameplayState(true); // Normalny start gry
-        }
+        AudioListener.pause = false;
+
+        if (splashScreenObject != null) ShowStartSplash();
+        else SetGameplayState(true);
+
+        // Upewniamy siÄ™, Å¼e ekran Å›mierci jest wyÅ‚Ä…czony na starcie
+        if (deathScreenObject != null) deathScreenObject.SetActive(false);
     }
 
     void Update()
     {
-        // 1. Obs³uga planszy (Spacja/Enter)
+        // JeÅ›li gracz nie Å¼yje, blokujemy resztÄ™ sterowania UI
+        if (isDead) return;
+
         if (isSplashActive && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)))
         {
             StartCoroutine(FadeAndCloseSplash());
         }
 
-        // 2. Obs³uga Pauzy (ESC)
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (!isSplashActive && Input.GetKeyDown(KeyCode.Escape))
         {
             PauseUnpause();
         }
 
-        // 3. PANCERNA BLOKADA MYSZY
-        // Jeœli gra jest zatrzymana, wymuszamy widocznoœæ kursora w ka¿dej klatce.
-        // To odcina sterowanie kamer¹ w wiêkszoœci gotowych kontrolerów Unity.
         if (isPaused || isSplashActive)
         {
             Cursor.lockState = CursorLockMode.None;
@@ -66,93 +73,86 @@ public class UIController : MonoBehaviour
         }
     }
 
-    public void ResumeGame()
+    // --- LOGIKA EKRANU ÅšMIERCI Z ANIMACJÄ„ ---
+
+    public void ShowDeathScreen()
     {
-        if (isPaused) PauseUnpause();
+        if (isDead) return;
+        StartCoroutine(DeathSequenceRoutine());
     }
 
-    public void ShowStartSplash()
+    private IEnumerator DeathSequenceRoutine()
     {
-        isSplashActive = true;
-        isEndingSplash = false;
+        isDead = true;
+        SetGameplayState(false); // Blokada ruchu i myszki
 
-        if (splashCanvasGroup != null) splashCanvasGroup.alpha = 1f;
-        splashScreenObject.SetActive(true);
+        // 1. Ukrywamy latarkÄ™
+        if (flashlightUI != null) flashlightUI.SetActive(false);
 
-        if (splashText)
+        // 2. Przygotowujemy panel (wszystko na 0)
+        deathScreenObject.SetActive(true);
+        deathPanelGroup.alpha = 0f;
+        youDiedTextGroup.alpha = 0f;
+        respawnButton.SetActive(false);
+
+        // Zatrzymujemy czas, ale animacje bÄ™dÄ… dziaÅ‚aÄ‡ (unscaledDeltaTime)
+        Time.timeScale = 0f;
+
+        // 3. FADE IN KRWI (TÅ‚o)
+        float elapsed = 0f;
+        float bloodFadeDuration = 2.0f;
+        while (elapsed < bloodFadeDuration)
         {
-            splashText.text = "<b>„Azyl Œwitu”, rok 1984.</b>\n\n" +
-                              "G³owa pulsuje mi têpym bólem, a w ustach czujê metaliczny posmak taniej wódki i kurzu. " +
-                              "Pamiêtam tylko œmiech kolegów z huty i ostatni toast... a potem nasta³a ciemnoœæ.\n\n" +
-                              "Budzê siê w miejscu, o którym kr¹¿¹ legendy szeptane przy zgaszonym œwietle. " +
-                              "Powietrze œmierdzi chlorem, stêchlizn¹ i czymœ jeszcze... Nie jestem tu sam.\n\n" +
-                              "<size=80%><color=#888888>[E] to Twój przycisk interakcji.\n" + 
-                              "Naciœnij [SPACJÊ], aby otworzyæ oczy...</color></size>";
+            elapsed += Time.unscaledDeltaTime;
+            deathPanelGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / bloodFadeDuration);
+            yield return null;
         }
 
-        SetGameplayState(false);
+        // 4. FADE IN "YOU DIED"
+        elapsed = 0f;
+        float textFadeDuration = 1.5f;
+        while (elapsed < textFadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            youDiedTextGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / textFadeDuration);
+            yield return null;
+        }
+
+        // 5. POKAZUJEMY PRZYCISK
+        yield return new WaitForSecondsRealtime(0.5f);
+        respawnButton.SetActive(true);
+        
+        // Gwarancja widocznoÅ›ci kursora
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
-    public void ShowEndSplash()
+    public void HideDeathScreen()
     {
-        isSplashActive = true;
-        isEndingSplash = true;
-
-        if (splashCanvasGroup != null) splashCanvasGroup.alpha = 1f;
-        splashScreenObject.SetActive(true);
-
-        if (splashText)
-        {
-            splashText.text = "<b>Ciemno... nagle zrobi³o mi siê zupe³nie ciemno...</b>\n\n" +
-                              "Co siê dzieje? S³yszê ich, jest ich tam mnóstwo, krzycz¹ coœ do siebie. Czujê, jak mnie ³api¹, szarpi¹ za rêce, rzucam siê, chcê uciec, ale trzymaj¹ mnie za mocno.\n\n" +
-                              "Co to za smród? Alkohol? Chusteczka... przyciskaj¹ mi j¹ do twarzy. Nie mogê oddychaæ. Bo¿e, zak³adaj¹ mi kaftan, czujê te pasy na piersiach, nie mam si³y siê ruszyæ. " +
-                              "Muszê... muszê wytrzymaæ, nie mogê teraz zasn¹æ... ale wszystko mi odp³ywa. Nie dajê rady.\n\n" +
-                              "<size=80%><color=#888888>Naciœnij [SPACJÊ], aby wróciæ na oddzia³...</color></size>";
-        }
-
-        SetGameplayState(false);
+        isDead = false;
+        if (deathScreenObject != null) deathScreenObject.SetActive(false);
+        if (flashlightUI != null) flashlightUI.SetActive(true);
+        
+        Time.timeScale = 1f;
+        // SetGameplayState(true) zostanie wywoÅ‚ane przez PlayerRespawn po teleportacji
     }
 
-    private IEnumerator FadeAndCloseSplash()
-    {
-        isSplashActive = false;
+    // --- RESZTA LOGIKI ---
 
-        if (isEndingSplash)
-        {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            yield break;
-        }
-
-        if (splashCanvasGroup != null)
-        {
-            float currentTime = 0;
-            while (currentTime < fadeDuration)
-            {
-                currentTime += Time.unscaledDeltaTime;
-                splashCanvasGroup.alpha = Mathf.Lerp(1f, 0f, currentTime / fadeDuration);
-                yield return null;
-            }
-        }
-
-        splashScreenObject.SetActive(false);
-        SetGameplayState(true);
-    }
+    public void ResumeGame() { if (isPaused) PauseUnpause(); }
 
     public void PauseUnpause()
     {
-        if (isSplashActive) return;
-
+        if (isSplashActive || isDead) return;
         isPaused = !isPaused;
         pauseScreen.SetActive(isPaused);
+        
+        Time.timeScale = isPaused ? 0f : 1f;
         SetGameplayState(!isPaused);
     }
 
-    // G£ÓWNA METODA ZARZ¥DZAJ¥CA STANEM GRY
-    private void SetGameplayState(bool active)
+    public void SetGameplayState(bool active)
     {
-        Time.timeScale = active ? 1f : 0f;
-
         if (playerMovementScript != null) playerMovementScript.enabled = active;
         if (cameraLookScript != null) cameraLookScript.enabled = active;
 
@@ -174,11 +174,65 @@ public class UIController : MonoBehaviour
         }
     }
 
-    public void GoToMainMenu()
+    public void ShowStartSplash()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(mainMenuName);
+        isSplashActive = true; isEndingSplash = false;
+        if (splashCanvasGroup != null) splashCanvasGroup.alpha = 1f;
+        splashScreenObject.SetActive(true);
+
+        if (splashText)
+        {
+            splashText.text = "<b>â€Azyl Åšwituâ€, rok 1984.</b>\n\n" +
+                              "GÅ‚owa pulsuje mi tÄ™pym bÃ³lem, a w ustach czujÄ™ metaliczny posmak taniej wÃ³dki i kurzu. " +
+                              "PamiÄ™tam tylko Å›miech kolegÃ³w z huty i ostatni toast... a potem nastaÅ‚a ciemnoÅ›Ä‡.\n\n" +
+                              "BudzÄ™ siÄ™ w miejscu, o ktÃ³rym krÄ…Å¼Ä… legendy szeptane przy zgaszonym Å›wietle. " +
+                              "Powietrze Å›mierdzi chlorem, stÄ™chliznÄ… i czymÅ› jeszcze... Nie jestem tu sam.\n\n" +
+                              "<size=80%><color=#888888>[E] to TwÃ³j przycisk interakcji.\n" + 
+                              "NaciÅ›nij [SPACJÄ˜], aby otworzyÄ‡ oczy...</color></size>";
+        }
+        SetGameplayState(false);
+        Time.timeScale = 0f; 
     }
 
+    public void ShowEndSplash()
+    {
+        isSplashActive = true; isEndingSplash = true;
+        if (splashCanvasGroup != null) splashCanvasGroup.alpha = 1f;
+        splashScreenObject.SetActive(true);
+
+        if (splashText)
+        {
+            splashText.text = "<b>Ciemno... nagle zrobiÅ‚o mi siÄ™ zupeÅ‚nie ciemno...</b>\n\n" +
+                              "Co siÄ™ dzieje? SÅ‚yszÄ™ ich, jest ich tam mnÃ³stwo, krzyczÄ… coÅ› do siebie. CzujÄ™, jak mnie Å‚apiÄ…, szarpiÄ… za rÄ™ce, rzucam siÄ™, chcÄ™ uciec, ale trzymajÄ… mnie za mocno.\n\n" +
+                              "Co to za smrÃ³d? Alkohol? Chusteczka... przyciskajÄ… mi jÄ… do twarzy. Nie mogÄ™ oddychaÄ‡. BoÅ¼e, zakÅ‚adajÄ… mi kaftan, czujÄ™ te pasy na piersiach, nie mam siÅ‚y siÄ™ ruszyÄ‡. " +
+                              "MuszÄ™... muszÄ™ wytrzymaÄ‡, nie mogÄ™ teraz zasnÄ…Ä‡... ale wszystko mi odpÅ‚ywa. Nie dajÄ™ rady.\n\n" +
+                              "<size=80%><color=#888888>NaciÅ›nij [SPACJÄ˜], aby wrÃ³ciÄ‡ na oddziaÅ‚...</color></size>";
+        }
+        SetGameplayState(false);
+        Time.timeScale = 0f;
+    }
+
+    private IEnumerator FadeAndCloseSplash()
+    {
+        isSplashActive = false;
+        if (isEndingSplash) {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            yield break;
+        }
+        if (splashCanvasGroup != null) {
+            float currentTime = 0;
+            while (currentTime < fadeDuration) {
+                currentTime += Time.unscaledDeltaTime;
+                splashCanvasGroup.alpha = Mathf.Lerp(1f, 0f, currentTime / fadeDuration);
+                yield return null;
+            }
+        }
+        splashScreenObject.SetActive(false);
+        SetGameplayState(true);
+        Time.timeScale = 1f;
+    }
+
+    public void GoToMainMenu() { Time.timeScale = 1f; SceneManager.LoadScene(mainMenuName); }
     public void QuitGame() => Application.Quit();
 }

@@ -7,15 +7,18 @@ public class FlashlightPickup : MonoBehaviour
     public float interactionDistance = 4f;
     public LayerMask interactionLayer = ~0;
 
-    [Header("G³ówne Aktywacje (Gracz)")]
+    [Header("GÅ‚Ã³wne Aktywacje (Gracz)")]
     public GameObject playerFlashlight;      // Obiekt latarki u gracza
     public MonoBehaviour flashlightEffectScript; // Skrypt na kamerze gracza
+    
+    [Header("UI")]
+    public GameObject energyBarUI;      // <--- ZMIANA: PrzeciÄ…gnij tu sam obiekt SLIDER
 
-    [Header("Œwiat³o Podœwietlaj¹ce (Scena)")]
-    public GameObject highlightLight;        // PRZECI¥GNIJ TU ŒWIAT£O, KTÓRE MA ZGASN¥Æ NA STA£E
+    [Header("ÅšwiatÅ‚o PodÅ›wietlajÄ…ce (Scena)")]
+    public GameObject highlightLight;        // ÅšwiatÅ‚o na ziemi
 
     [Header("Ustawienia Migania (Latarka Gracza)")]
-    public GameObject flickerTarget;         // Co ma migaæ u gracza (np. ¿arówka)
+    public GameObject flickerTarget;         // Co ma migaÄ‡ u gracza
     public int flickerCount = 3;
     public float flickerSpeed = 0.2f;
     public float darkPause = 1.0f;
@@ -26,9 +29,12 @@ public class FlashlightPickup : MonoBehaviour
     {
         mainCam = Camera.main;
 
-        // Przygotowanie stanu pocz¹tkowego
+        // 1. Przygotowanie stanu poczÄ…tkowego
         if (playerFlashlight != null) playerFlashlight.SetActive(false);
         if (flashlightEffectScript != null) flashlightEffectScript.enabled = false;
+
+        // 2. WyÅ‚Ä…czamy tylko Slider (celownik pozostanie widoczny, jeÅ›li jest na Canvasie)
+        if (energyBarUI != null) energyBarUI.SetActive(false);
     }
 
     void Update()
@@ -48,24 +54,29 @@ public class FlashlightPickup : MonoBehaviour
 
     void Interact()
     {
-        // 1. NATYCHMIASTOWE zgaszenie œwiat³a podœwietlaj¹cego przedmiot na ziemi
+        // 1. Zgaszenie Å›wiatÅ‚a na ziemi
         if (highlightLight != null)
         {
             highlightLight.SetActive(false);
-            Debug.Log("Œwiat³o pomocnicze zgaszone na sta³e.");
         }
 
-        // 2. W³¹czenie latarki gracza
+        // 2. WÅ‚Ä…czenie latarki gracza
         if (playerFlashlight != null) playerFlashlight.SetActive(true);
         if (flashlightEffectScript != null) flashlightEffectScript.enabled = true;
 
-        // 3. Odpalenie migania tylko dla latarki gracza
+        // 3. WÅÄ„CZENIE SAMEGO SLIDERA
+        if (energyBarUI != null)
+        {
+            energyBarUI.SetActive(true);
+        }
+
+        // 4. Odpalenie migania
         if (flickerTarget != null)
         {
             mainCam.GetComponent<MonoBehaviour>().StartCoroutine(CustomFlickerRoutine());
         }
 
-        // 4. Usuniêcie modelu z ziemi
+        // 5. UsuniÄ™cie modelu z ziemi
         Destroy(gameObject);
     }
 
